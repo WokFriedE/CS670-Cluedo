@@ -247,7 +247,7 @@ class Game:
         cards_per_player = len(filtered_deck) // self.num_players
 
         # Let people choose their characters
-        available_suspects = SUSPECTS
+        available_suspects = SUSPECTS.copy()
         for i in range(1, self.num_players + 1):
             is_bot = i > self.num_players - self.num_bots
             if not is_bot:
@@ -259,7 +259,7 @@ class Game:
 
             available_suspects.remove(chosen_suspect)
             player_deck_hand = filtered_deck[:cards_per_player]
-            cards_per_player = filtered_deck[cards_per_player:]
+            filtered_deck = filtered_deck[cards_per_player:]
             initial_players[chosen_suspect] = Player(
                 player_number=i,
                 person=chosen_suspect,
@@ -367,11 +367,12 @@ class Game:
     def end_turn(self):
         """Change the turn / player"""
         next_player = self.player_turn + 1
-        self.player_turn = 0 if next_player > self.num_players else next_player
+        self.player_turn = 0 if next_player >= self.num_players else next_player
 
     def play(self):
         """Run the game"""
         self.game_setup()
+        print("Finished game set up\n\n\n")
         while True:
             current_player = self.get_player_from_index()
             result = self.take_turn(current_player=current_player)
