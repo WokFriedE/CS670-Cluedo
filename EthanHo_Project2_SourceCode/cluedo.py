@@ -93,6 +93,7 @@ class Player:
         self.skip: bool = skip
         self.is_filler: bool = is_filler
         self.hidden_cards: list = given_cards
+        self.last_suggested_location: str = ""
 
     def get_player_identifier(self) -> str:
         if self.is_filler:
@@ -152,7 +153,10 @@ class Suggestion:
         """Function that allows a player to trigger the user flow for a suggestion"""
         suspect_player = players[self.suspect]
         suspect_player.change_room(self.room)
+        suspect_player.last_suggested_location = ""
         self.weapon.set_location(new_room=self.room)
+        if current_player.last_suggested_location == self.room:
+            print("You cannot suggest in the same room in a row")
         for _, player in players.items():
             if (
                 len(player.hidden_cards) < 1
@@ -162,6 +166,7 @@ class Suggestion:
             cards = self.player_check_cards(revealing_player=player)
             if cards is None:
                 continue
+            current_player.last_suggested_location = self.room
             if player.is_player:
                 self.player_reveal_card(
                     matching_cards=cards, player_id=player.get_player_identifier()
@@ -173,7 +178,7 @@ class Suggestion:
             )
             return
 
-        print("No players have any cards related to suggestion.")
+        print("No other players have any cards related to suggestion.")
 
     def player_check_cards(
         self,
@@ -200,7 +205,7 @@ class Suggestion:
             f"{player_id} has at least 1 card, provide control to the player and click enter."
         )
         print(
-            f"{player_id}, the current player suggested {self.combined}, choose one to reveal, after return to original player"
+            f"{player_id}, the current player suggested {self}, choose one to reveal, after return to original player"
         )
         revealed_card = list_options(matching_cards)
         if self.print_buffer:
@@ -358,9 +363,16 @@ class Game:
         player_location = current_player.location
         print(f"{player_id}, you are in the {player_location}")
         print(f"Hidden cards: {current_player.hidden_cards}")
+        is_in_last_suggestion = (
+            current_player.last_suggested_location == player_location
+        )
         # Do you want to move? -> if so run roll and so on
         want_to_move = None
         while True:
+            if is_in_last_suggestion:
+                print(
+                    "Note: you will not be able to make a suggestion in the same room twice"
+                )
             temp_ans = input("Do you want to move? (y/n) ")
             if temp_ans.lower() in ["y", "n"]:
                 want_to_move = temp_ans.lower() == "y"
@@ -387,10 +399,15 @@ class Game:
             player_location = current_player.location
 
         # Enter room -> make suggestions for room
+        possible_actions = ["make accusation", "end turn"]
+        if not is_in_last_suggestion:
+            possible_actions.insert(0, "make suggestion")
         action_in_room = list_options(
-            options=["make suggestion", "make accusation"],
+            options=possible_actions,
             prompt=f"{player_id} what would you like to do in this room?",
         )
+        if action_in_room == "end turn":
+            return
         # Run the suggestion -> letting the user pick which card to show if they have
         suspect = list_options(options=SUSPECTS, prompt="What person do you suspect?")
         weapon = list_options(options=WEAPONS, prompt="What weapon do you suspect?")
@@ -467,7 +484,7 @@ def main():
         input(
             "Would you like to use screen buffer (hides results from other players)? Type NO to remove, else yes: "
         ).lower()
-        == "no"
+        != "no"
     )
     # For part 1, number of bots will be forced to 0
     game = Game(num_players=num_players, num_bots=0, print_buffer=print_buffer)
@@ -476,3 +493,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# TODO: update logic so that the suggestion occurs when the player enters a room - check if the last room they are in is in the same room they are suggesting.
