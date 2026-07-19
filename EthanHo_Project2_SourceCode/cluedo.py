@@ -1,3 +1,5 @@
+import random
+
 # ===============
 # Definitions
 # ===============
@@ -45,9 +47,32 @@ STARTING_POSITIONS = {
     "Professor Plum": "Library",
 }
 
+MIN_PLAYERS = 3
+MAX_PLAYERS = 6
+
+
 # ===============
 # Support Class Objects
 # ===============
+
+
+class Weapon:
+    def __init__(self, weapon: str):
+        self.weapon_name: str = weapon
+        self.location: str | None = None
+
+    def get_location(self) -> str:
+        """Gets the location of the weapon"""
+        if not self.location:
+            return "No room"
+        return self.location
+
+    def set_location(self, new_room: str) -> None:
+        """Changes the location of the weapon"""
+        self.location = new_room
+
+    def __str__(self) -> str:
+        return f"{self.weapon_name}"
 
 
 class Player:
@@ -85,7 +110,7 @@ class Player:
         """
         current_room = MANSION_GRAPH[self.location]
         if new_room not in current_room:
-            print("Room selected is not traversable\n")
+            print("Room selected is not traversable from here\n")
             return False
         new_room_dist = current_room[new_room]
         if roll < new_room_dist:
@@ -100,15 +125,17 @@ class Suggestion:
     def __init__(
         self,
         suspect: str,
-        weapon: str,
+        weapon: Weapon,
         room: str,
         player_suggesting: Player | None = None,
+        print_buffer: bool = False,
     ):
         self.suspect = suspect
         self.weapon = weapon
         self.room = room
         self.player = player_suggesting
         self.combined = [self.room, self.weapon, self.suspect]
+        self.print_buffer = print_buffer
 
     def __str__(self) -> str:
         return f"{self.suspect}, with the {self.weapon}, in the {self.room}"
@@ -125,6 +152,7 @@ class Suggestion:
         """Function that allows a player to trigger the user flow for a suggestion"""
         suspect_player = players[self.suspect]
         suspect_player.change_room(self.room)
+        self.weapon.set_location(new_room=self.room)
         for _, player in players.items():
             if (
                 len(player.hidden_cards) < 1
@@ -175,17 +203,14 @@ class Suggestion:
             f"{player_id}, the current player suggested {self.combined}, choose one to reveal, after return to original player"
         )
         revealed_card = list_options(matching_cards)
-        print_screen_buffer()
+        if self.print_buffer:
+            print_screen_buffer()
         self.reveal_card(player_id=player_id, revealed_card=revealed_card)
 
 
 # ===============
 # Classes / Util Functions
 # ===============
-import random
-
-MIN_PLAYERS = 3
-MAX_PLAYERS = 6
 
 
 def list_options(options: list, prompt: str = ""):
@@ -226,13 +251,17 @@ class Game:
         self.num_bots = num_bots
         self.players: dict[str, Player] = {}
         self.print_buffer = print_buffer
+        self.weapons: dict[str, Weapon] = {w: Weapon(w) for w in WEAPONS}
 
         # Generate the final accusation on initialization
         final_suspect = random.choice(SUSPECTS)
-        final_weapon = random.choice(WEAPONS)
+        final_weapon = random.choice(list(self.weapons.values()))
         final_room = random.choice(ROOMS)
         self.final_accusation = Suggestion(
-            suspect=final_suspect, room=final_room, weapon=final_weapon
+            suspect=final_suspect,
+            room=final_room,
+            weapon=final_weapon,
+            print_buffer=self.print_buffer,
         )
 
     def game_setup(self):
@@ -290,6 +319,9 @@ class Game:
         self.players = {x: y for x, y in initial_players.items() if y is not None}
         if len(self.players) != 6:
             raise ValueError("The total characters is not 6")
+        if len(filtered_deck) > 0:
+            temp_str = ", ".join(filtered_deck)
+            print(f"Shared remaining deck: {temp_str}")
 
     def get_player_from_index(self) -> Player:
         """Using the current turn counter, get the player object"""
@@ -364,7 +396,11 @@ class Game:
         weapon = list_options(options=WEAPONS, prompt="What weapon do you suspect?")
         room = player_location
         player_suggestion = Suggestion(
-            suspect=suspect, weapon=weapon, room=room, player_suggesting=current_player
+            suspect=suspect,
+            weapon=self.weapons[weapon],
+            room=room,
+            player_suggesting=current_player,
+            print_buffer=self.print_buffer,
         )
         print(f"{player_id} suggest it was {player_suggestion}")
         # Make accusation!
@@ -379,6 +415,10 @@ class Game:
         """Change the turn / player"""
         next_player = self.player_turn + 1
         self.player_turn = 0 if next_player >= self.num_players else next_player
+        curr_player = self.get_player_from_index()
+        if curr_player.skip:
+            print(f"Skipping {curr_player.get_player_identifier()}")
+            self.end_turn()
 
     def play(self):
         """Run the game"""
@@ -396,7 +436,8 @@ class Game:
                 f"To end your turn {current_player.get_player_identifier()}, click enter."
             )
             self.end_turn()
-            print_screen_buffer()
+            if self.print_buffer:
+                print_screen_buffer()
 
 
 # ===============
@@ -421,18 +462,15 @@ def main():
             continue
         if num_players >= MIN_PLAYERS and num_players <= MAX_PLAYERS:
             break
-    while True:
-        try:
-            temp_ans = input(
-                "Would you like to use screen buffer (hides results from other players)?"
-            )
-        except ValueError:
-            print(f"Please input a valid integer from {MIN_PLAYERS} to {MAX_PLAYERS}")
-            continue
-        if num_players >= MIN_PLAYERS and num_players <= MAX_PLAYERS:
-            break
+    print_buffer = True
+    print_buffer = (
+        input(
+            "Would you like to use screen buffer (hides results from other players)? Type NO to remove, else yes: "
+        ).lower()
+        == "no"
+    )
     # For part 1, number of bots will be forced to 0
-    game = Game(num_players=num_players, num_bots=0)
+    game = Game(num_players=num_players, num_bots=0, print_buffer=print_buffer)
     game.play()
 
 
