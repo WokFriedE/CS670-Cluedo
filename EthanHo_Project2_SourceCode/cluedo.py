@@ -22,6 +22,7 @@ MANSION_GRAPH = {
     },  # 0 cost = Secret Passage
     "Hall": {"Study": 3, "Lounge": 4},
 }
+# List of suspects
 SUSPECTS = [
     "Miss Scarlett",
     "Colonel Mustard",
@@ -30,8 +31,11 @@ SUSPECTS = [
     "Mrs. Peacock",
     "Professor Plum",
 ]
+# List of weapons
 WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
+# List of rooms
 ROOMS = list(MANSION_GRAPH.keys())
+# Set starting positions
 STARTING_POSITIONS = {
     "Miss Scarlett": "Lounge",
     "Colonel Mustard": "Dining Room",
@@ -57,13 +61,13 @@ class Player:
         skip: bool = False,
         is_filler: bool = False,
     ):
-        self.player_number = player_number
-        self.person = person
-        self.location = starting_room
-        self.is_player = is_player
-        self.skip = skip
-        self.is_filler = is_filler
-        self.hidden_cards = given_cards
+        self.player_number: int = player_number
+        self.person: str = person
+        self.location: str = starting_room
+        self.is_player: bool = is_player
+        self.skip: bool = skip
+        self.is_filler: bool = is_filler
+        self.hidden_cards: list = given_cards
 
     def get_player_identifier(self) -> str:
         if self.is_filler:
@@ -81,11 +85,11 @@ class Player:
         """
         current_room = MANSION_GRAPH[self.location]
         if new_room not in current_room:
-            print("Room selected is not traversable")
+            print("Room selected is not traversable\n")
             return False
         new_room_dist = current_room[new_room]
-        if new_room_dist < roll:
-            print("Not enough distance to travel")
+        if roll < new_room_dist:
+            print("Not enough distance to travel\n")
             return False
         self.change_room(new_room=new_room)
         print(f"Player {self.person}, you are in {new_room}.")
@@ -117,26 +121,29 @@ class Suggestion:
             and self.room == to_compare.room
         )
 
-    def declare_suggestion(self, players: dict):
+    def declare_suggestion(self, players: dict[str, Player], current_player: Player):
         """Function that allows a player to trigger the user flow for a suggestion"""
         suspect_player = players[self.suspect]
         suspect_player.change_room(self.room)
-        for player in players:
-            if player.skip:
+        for _, player in players.items():
+            if (
+                len(player.hidden_cards) < 1
+                or player.player_number == current_player.player_number
+            ):
                 continue
             cards = self.player_check_cards(revealing_player=player)
             if cards is None:
                 continue
             if player.is_player:
                 self.player_reveal_card(
-                    matching_cards=cards, player_id=player.player_identifier()
+                    matching_cards=cards, player_id=player.get_player_identifier()
                 )
-                break
+                return
             # For now, reveal card for non players is always first one
             self.reveal_card(
-                player_id=player.player_identifier(), revealed_card=cards[0]
+                player_id=player.get_player_identifier(), revealed_card=cards[0]
             )
-            break
+            return
 
         print("No players have any cards related to suggestion.")
 
@@ -157,10 +164,7 @@ class Suggestion:
 
     def reveal_card(self, player_id: str, revealed_card: str) -> None:
         """Support function to just print what was revealed"""
-        input(
-            f"{player_id} revealed {revealed_card}, click enter to continue and end your turn"
-        )
-        print_screen_buffer()
+        print(f"{player_id} revealed {revealed_card}, click enter to continue")
 
     def player_reveal_card(self, matching_cards: list, player_id: str):
         """Lets a player select the card they want to reveal to another player and reveals it"""
@@ -186,6 +190,7 @@ MAX_PLAYERS = 6
 
 def list_options(options: list, prompt: str = ""):
     """Print out the current options and request the user to chose one, return the result"""
+    print()
     if prompt:
         print(prompt)
     print("Please type the number for the action you would like:")
@@ -205,7 +210,8 @@ def list_options(options: list, prompt: str = ""):
 
 
 def print_screen_buffer() -> None:
-    print("\n" * 10)
+    """Print a screen buffer to prevent players from seeing the hot swap"""
+    print("\n" * 20)
 
 
 def roll_die() -> int:
@@ -214,11 +220,12 @@ def roll_die() -> int:
 
 
 class Game:
-    def __init__(self, num_players: int, num_bots: int):
+    def __init__(self, num_players: int, num_bots: int, print_buffer: bool = True):
         self.player_turn = 0
         self.num_players = num_players
         self.num_bots = num_bots
         self.players: dict[str, Player] = {}
+        self.print_buffer = print_buffer
 
         # Generate the final accusation on initialization
         final_suspect = random.choice(SUSPECTS)
@@ -302,8 +309,9 @@ class Game:
                 f"{player_ref.get_player_identifier()} has made a correct accusation with {accusation}!"
             )
             return True
+        print_screen_buffer()
         print(
-            f"{player_ref.get_player_identifier()} has made an incorrect accusation and will not be skipped."
+            f"{player_ref.get_player_identifier()} has made an incorrect accusation and will now be skipped."
         )
         player_ref.skip = True
         return False
@@ -317,29 +325,30 @@ class Game:
             return
         player_location = current_player.location
         print(f"{player_id}, you are in the {player_location}")
+        print(f"Hidden cards: {current_player.hidden_cards}")
         # Do you want to move? -> if so run roll and so on
-        want_to_move = False
+        want_to_move = None
         while True:
-            want_to_move = input("Do you want to move? (y/n) ")
-            if want_to_move.lower in ["y", "n"]:
-                want_to_move = want_to_move.lower == "y"
+            temp_ans = input("Do you want to move? (y/n) ")
+            if temp_ans.lower() in ["y", "n"]:
+                want_to_move = temp_ans.lower() == "y"
                 break
             print("Please enter y/Y for yes or n/N for no")
         if want_to_move:
             die_res = roll_die()
             print(f"{player_id} rolled a {die_res}")
             possible_rooms = [
-                f"{location} ({dist})"
+                f"{location}-({dist} distance)"
                 for location, dist in MANSION_GRAPH[player_location].items()
             ]
             possible_rooms.append("Stay")
             while True:
                 move_choice = list_options(
                     options=possible_rooms,
-                    prompt="Choose a room to travel to, ensure you can travel the distance. 0 are secret passages",
+                    prompt=f"Choose a room to travel to, ensure you can travel the distance. 0 are secret passages - Current roll {die_res}",
                 )
                 if move_choice == "Stay" or current_player.action_move(
-                    new_room=move_choice, roll=die_res
+                    new_room=move_choice.split("-")[0], roll=die_res
                 ):
                     break
 
@@ -353,16 +362,18 @@ class Game:
         # Run the suggestion -> letting the user pick which card to show if they have
         suspect = list_options(options=SUSPECTS, prompt="What person do you suspect?")
         weapon = list_options(options=WEAPONS, prompt="What weapon do you suspect?")
-        room = list_options(options=ROOMS, prompt="What room do you suspect?")
+        room = player_location
         player_suggestion = Suggestion(
             suspect=suspect, weapon=weapon, room=room, player_suggesting=current_player
         )
+        print(f"{player_id} suggest it was {player_suggestion}")
         # Make accusation!
         if action_in_room == "make accusation":
             return self.check_accusation(accusation=player_suggestion)
-        print(f"{player_id} suggest it was {player_suggestion}")
         # If not accusation, then do a normal accusation check
-        player_suggestion.declare_suggestion(players=self.players)
+        player_suggestion.declare_suggestion(
+            players=self.players, current_player=current_player
+        )
 
     def end_turn(self):
         """Change the turn / player"""
@@ -378,7 +389,14 @@ class Game:
             result = self.take_turn(current_player=current_player)
             if result == True:
                 break
+            if all([p.skip for p in self.players.values()]):
+                print("All players have failed to find the suspect. Game ending.")
+                break
+            input(
+                f"To end your turn {current_player.get_player_identifier()}, click enter."
+            )
             self.end_turn()
+            print_screen_buffer()
 
 
 # ===============
@@ -397,6 +415,16 @@ def main():
                 input(
                     f"Provide the number of players between {MIN_PLAYERS} to {MAX_PLAYERS}: "
                 )
+            )
+        except ValueError:
+            print(f"Please input a valid integer from {MIN_PLAYERS} to {MAX_PLAYERS}")
+            continue
+        if num_players >= MIN_PLAYERS and num_players <= MAX_PLAYERS:
+            break
+    while True:
+        try:
+            temp_ans = input(
+                "Would you like to use screen buffer (hides results from other players)?"
             )
         except ValueError:
             print(f"Please input a valid integer from {MIN_PLAYERS} to {MAX_PLAYERS}")
