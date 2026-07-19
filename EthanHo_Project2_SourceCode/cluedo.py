@@ -42,6 +42,140 @@ STARTING_POSITIONS = {
 }
 
 # ===============
+# Support Class Objects
+# ===============
+
+
+class Player:
+    def __init__(
+        self,
+        player_number: int,
+        person: str,
+        starting_room: str,
+        is_player: bool,
+        given_cards: list,
+        skip: bool = False,
+        is_filler: bool = False,
+    ):
+        self.player_number = player_number
+        self.person = person
+        self.location = starting_room
+        self.is_player = is_player
+        self.skip = skip
+        self.is_filler = is_filler
+        self.hidden_cards = given_cards
+
+    def get_player_identifier(self) -> str:
+        if self.is_filler:
+            return f"(Filler) Character {self.person}"
+        return f"Player {self.player_number} ({self.person})"
+
+    def change_room(self, new_room: str):
+        self.location = new_room
+
+    def action_move(self, new_room: str, roll: int) -> bool:
+        """
+        Function for a player to move to a new room while validating possibility.
+        Return True for valid move.
+        Return False for invalid move.
+        """
+        current_room = MANSION_GRAPH[self.location]
+        if new_room not in current_room:
+            print("Room selected is not traversable")
+            return False
+        new_room_dist = current_room[new_room]
+        if new_room_dist < roll:
+            print("Not enough distance to travel")
+            return False
+        self.change_room(new_room=new_room)
+        print(f"Player {self.person}, you are in {new_room}.")
+        return True
+
+
+class Suggestion:
+    def __init__(
+        self,
+        suspect: str,
+        weapon: str,
+        room: str,
+        player_suggesting: Player | None = None,
+    ):
+        self.suspect = suspect
+        self.weapon = weapon
+        self.room = room
+        self.player = player_suggesting
+        self.combined = [self.room, self.weapon, self.suspect]
+
+    def __str__(self) -> str:
+        return f"{self.suspect}, with the {self.weapon}, in the {self.room}"
+
+    def compare_suggestions(self, to_compare: "Suggestion") -> bool:
+        """Compare two suggestions to see if the contents match exactly"""
+        return (
+            self.suspect == to_compare.suspect
+            and self.weapon == to_compare.weapon
+            and self.room == to_compare.room
+        )
+
+    def declare_suggestion(self, players: dict):
+        """Function that allows a player to trigger the user flow for a suggestion"""
+        suspect_player = players[self.suspect]
+        suspect_player.change_room(self.room)
+        for player in players:
+            if player.skip:
+                continue
+            cards = self.player_check_cards(revealing_player=player)
+            if cards is None:
+                continue
+            if player.is_player:
+                self.player_reveal_card(
+                    matching_cards=cards, player_id=player.player_identifier()
+                )
+                break
+            # For now, reveal card for non players is always first one
+            self.reveal_card(
+                player_id=player.player_identifier(), revealed_card=cards[0]
+            )
+            break
+
+        print("No players have any cards related to suggestion.")
+
+    def player_check_cards(
+        self,
+        revealing_player: Player,
+    ) -> list | None:
+        """
+        Check a player's hand to see if they have a card (intended for a player).
+        Return list of matching cards else None
+        """
+        # Cross reference the current suggestion with a player's cards
+        matching_cards = list(set(self.combined) & set(revealing_player.hidden_cards))
+        if len(matching_cards) == 0:
+            print(f"{revealing_player.get_player_identifier()} passes.")
+            return
+        return matching_cards
+
+    def reveal_card(self, player_id: str, revealed_card: str) -> None:
+        """Support function to just print what was revealed"""
+        input(
+            f"{player_id} revealed {revealed_card}, click enter to continue and end your turn"
+        )
+        print_screen_buffer()
+
+    def player_reveal_card(self, matching_cards: list, player_id: str):
+        """Lets a player select the card they want to reveal to another player and reveals it"""
+        input(
+            f"{player_id} has at least 1 card, provide control to the player and click enter."
+        )
+        print(
+            f"{player_id}, the current player suggested {self.combined}, choose one to reveal, after return to original player"
+        )
+        revealed_card = list_options(matching_cards)
+        print_screen_buffer()
+        self.reveal_card(player_id=player_id, revealed_card=revealed_card)
+
+
+# ===============
 # Classes / Util Functions
 # ===============
 import random
@@ -246,135 +380,6 @@ class Game:
             self.end_turn()
 
 
-class Suggestion:
-    def __init__(
-        self,
-        suspect: str,
-        weapon: str,
-        room: str,
-        player_suggesting: Player | None = None,
-    ):
-        self.suspect = suspect
-        self.weapon = weapon
-        self.room = room
-        self.player = player_suggesting
-        self.combined = [self.room, self.weapon, self.suspect]
-
-    def __str__(self) -> str:
-        return f"{self.suspect}, with the {self.weapon}, in the {self.room}"
-
-    def compare_suggestions(self, to_compare: "Suggestion") -> bool:
-        """Compare two suggestions to see if the contents match exactly"""
-        return (
-            self.suspect == to_compare.suspect
-            and self.weapon == to_compare.weapon
-            and self.room == to_compare.room
-        )
-
-    def declare_suggestion(self, players: dict):
-        """Function that allows a player to trigger the user flow for a suggestion"""
-        suspect_player = players[self.suspect]
-        suspect_player.change_room(self.room)
-        for player in players:
-            if player.skip:
-                continue
-            cards = self.player_check_cards(revealing_player=player)
-            if cards is None:
-                continue
-            if player.is_player:
-                self.player_reveal_card(
-                    matching_cards=cards, player_id=player.player_identifier()
-                )
-                break
-            # For now, reveal card for non players is always first one
-            self.reveal_card(
-                player_id=player.player_identifier(), revealed_card=cards[0]
-            )
-            break
-
-        print("No players have any cards related to suggestion.")
-
-    def player_check_cards(
-        self,
-        revealing_player: Player,
-    ) -> list | None:
-        """
-        Check a player's hand to see if they have a card (intended for a player).
-        Return list of matching cards else None
-        """
-        # Cross reference the current suggestion with a player's cards
-        matching_cards = list(set(self.combined) & set(revealing_player.hidden_cards))
-        if len(matching_cards) == 0:
-            print(f"{revealing_player.get_player_identifier()} passes.")
-            return
-        return matching_cards
-
-    def reveal_card(self, player_id: str, revealed_card: str) -> None:
-        """Support function to just print what was revealed"""
-        input(
-            f"{player_id} revealed {revealed_card}, click enter to continue and end your turn"
-        )
-        print_screen_buffer()
-
-    def player_reveal_card(self, matching_cards: list, player_id: str):
-        """Lets a player select the card they want to reveal to another player and reveals it"""
-        input(
-            f"{player_id} has at least 1 card, provide control to the player and click enter."
-        )
-        print(
-            f"{player_id}, the current player suggested {self.combined}, choose one to reveal, after return to original player"
-        )
-        revealed_card = list_options(matching_cards)
-        print_screen_buffer()
-        self.reveal_card(player_id=player_id, revealed_card=revealed_card)
-
-
-class Player:
-    def __init__(
-        self,
-        player_number: int,
-        person: str,
-        starting_room: str,
-        is_player: bool,
-        given_cards: list,
-        skip: bool = False,
-        is_filler: bool = False,
-    ):
-        self.player_number = player_number
-        self.person = person
-        self.location = starting_room
-        self.is_player = is_player
-        self.skip = skip
-        self.is_filler = is_filler
-        self.hidden_cards = given_cards
-
-    def get_player_identifier(self) -> str:
-        if self.is_filler:
-            return f"(Filler) Character {self.person}"
-        return f"Player {self.player_number} ({self.person})"
-
-    def change_room(self, new_room: str):
-        self.location = new_room
-
-    def action_move(self, new_room: str, roll: int) -> bool:
-        """
-        Function for a player to move to a new room while validating possibility.
-        Return True for valid move.
-        Return False for invalid move.
-        """
-        current_room = MANSION_GRAPH[self.location]
-        if new_room not in current_room:
-            print("Room selected is not traversable")
-            return False
-        new_room_dist = current_room[new_room]
-        if new_room_dist < roll:
-            print("Not enough distance to travel")
-            return False
-        self.change_room(new_room=new_room)
-        print(f"Player {self.person}, you are in {new_room}.")
-        return True
-
-
 # ===============
 # Set up
 # ===============
@@ -389,7 +394,7 @@ def main():
         try:
             num_players = int(
                 input(
-                    f"Provide the number of players between {MIN_PLAYERS} to {MAX_PLAYERS}:"
+                    f"Provide the number of players between {MIN_PLAYERS} to {MAX_PLAYERS}: "
                 )
             )
         except ValueError:
@@ -399,3 +404,8 @@ def main():
             break
     # For part 1, number of bots will be forced to 0
     game = Game(num_players=num_players, num_bots=0)
+    game.play()
+
+
+if __name__ == "__main__":
+    main()
