@@ -41,7 +41,7 @@ The game will then set up the rest:
 
 ## General Comments
 
-- Have to keep track of your own evidence and shared cards, but your hidden cards.
+- Have to keep track of your own evidence, but your hidden cards and shared cards will be presented at the start of your turn.
 - Assumes hot swapping so there will be screen buffers to prevent players from seeing sensitive data, but you can disable the screen buffer during set up phases.
 - Most of the application will prompt users to enter their choices by choosing a choice with numbers or yes and no prompts.
 
