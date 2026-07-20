@@ -155,7 +155,7 @@ class Suggestion:
         """Function that allows a player to trigger the user flow for a suggestion"""
         suspect_player = players[self.suspect]
         suspect_player.change_room(self.room)
-        suspect_player.last_suggested_location = ""
+        suspect_player.last_suggested_location = self.room
         self.weapon.set_location(new_room=self.room)
         if current_player.last_suggested_location == self.room:
             print("You cannot suggest in the same room in a row")
@@ -369,8 +369,10 @@ class Game:
             print(f"skipping {player_id}")
             return
         player_location = current_player.location
+        changed_locations = False
         print(f"{player_id}, you are in the {player_location}")
-        print(f"Hidden cards: {current_player.hidden_cards}")
+        hidden_card_str = ", ".join(current_player.hidden_cards)
+        print(f"Hidden cards: {hidden_card_str}")
         is_in_last_suggestion = (
             current_player.last_suggested_location == player_location
         )
@@ -403,13 +405,15 @@ class Game:
                     new_room=move_choice.split("-")[0], roll=die_res
                 ):
                     break
-            is_in_last_suggestion = False
             player_location = current_player.location
+            changed_locations = True
 
         # Enter room -> make suggestions for room
-        possible_actions = ["make accusation", "end turn"]
-        if not is_in_last_suggestion:
+        possible_actions = ["make accusation"]
+        if not is_in_last_suggestion or changed_locations:
             possible_actions.insert(0, "make suggestion")
+        if not changed_locations:
+            possible_actions.append("end turn")
         action_in_room = list_options(
             options=possible_actions,
             prompt=f"{player_id} what would you like to do in this room?",
