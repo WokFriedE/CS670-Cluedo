@@ -11,6 +11,12 @@ Project 2, Part 1
    1. ```git clone https://github.com/WokFriedE/CS670-Cluedo```
 2. In the root of the code, run the command ```python3 EthanHo_Project2_SourceCode/cluedo.py``` to run the game.
 
+- Note: Currently for part 1 of the project, it does not allow bots.
+
+## System Requirements
+
+Python 3.11+
+
 ## Game Setup
 
 When trying to start the game, run the following command:
@@ -37,7 +43,6 @@ The game will then set up the rest:
 
 - Have to keep track of your own evidence and shared cards, but your hidden cards.
 - Assumes hot swapping so there will be screen buffers to prevent players from seeing sensitive data, but you can disable the screen buffer during set up phases.
-- Currently for part 1 of the project, it does not allow bots.
 - Most of the application will prompt users to enter their choices by choosing a choice with numbers or yes and no prompts.
 
 ## General Rules
@@ -49,3 +54,8 @@ The game will then set up the rest:
 - Accusations have to be in the same room, but can be made without conditions in your turn.
 - When revealing cards, it will be in suspect order with the next player being checked first.
 - Since we are using the graph set up, end turn is allowed if you stay within the same room from your previous turn or start turn as you may not be able to escape due to rolls.
+
+## Files
+
+- `cluedo.py`
+  - The main Python file that is used to run the entire game state with at least just players.
