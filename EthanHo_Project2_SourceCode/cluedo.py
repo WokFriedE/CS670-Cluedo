@@ -452,7 +452,7 @@ class Game:
     def end_turn(self):
         """Change the turn / player"""
         next_player = self.player_turn + 1
-        self.player_turn = 0 if next_player >= self.num_players else next_player
+        self.player_turn = 0 if next_player >= len(SUSPECTS) else next_player
         curr_player = self.get_player_from_index()
         if curr_player.skip:
             print(f"Skipping {curr_player.get_player_identifier()}")
