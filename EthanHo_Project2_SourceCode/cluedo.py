@@ -267,7 +267,7 @@ def list_options(options: list, prompt: str = ""):
 
 def print_screen_buffer() -> None:
     """Print a screen buffer to prevent players from seeing the hot swap"""
-    print("\n" * 20)
+    print("\n" * 50)
 
 
 def roll_die() -> int:
