@@ -398,6 +398,7 @@ class Game:
         player_location = current_player.location
         changed_locations = False
         print(f"{player_id}, you are in the {player_location}")
+        input("Click enter when ready.")
         hidden_card_str = ", ".join(current_player.hidden_cards)
         print(f"Hidden cards: {hidden_card_str}")
         if self.shared_cards_str:
