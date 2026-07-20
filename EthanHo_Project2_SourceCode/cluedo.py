@@ -154,7 +154,7 @@ class Suggestion:
         """Compare two suggestions to see if the contents match exactly"""
         return (
             self.suspect == to_compare.suspect
-            and self.weapon == to_compare.weapon
+            and self.weapon.weapon_name == to_compare.weapon.weapon_name
             and self.room == to_compare.room
         )
 
