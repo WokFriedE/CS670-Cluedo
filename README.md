@@ -57,5 +57,10 @@ The game will then set up the rest:
 
 ## Files
 
+- Folder `EthanHo_Project2_SourceCode`
+  - Folder the houses the game and a README file, according to the submission requirements
+  - To navigate here, use `cd EthanHo_Project2_SourceCode`, if you are using a Linux machine.
+- `EthanHo_Readme.md`
+  - Fundamentally the same as the README.md for the github repository.
 - `cluedo.py`
   - The main Python file that is used to run the entire game state with at least just players.
