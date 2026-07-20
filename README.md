@@ -8,7 +8,7 @@ ekh3@njit.edu
 ### Setting up the game
 
 1. Clone the repository.
-   1. ```git clone <link>```
+   1. ```git clone https://github.com/WokFriedE/CS670-Cluedo```
 2. In the root of the code, run the command ```python3 EthanHo_Project2_SourceCode/cluedo.py``` to run the game.
 
 ### Game Setup
