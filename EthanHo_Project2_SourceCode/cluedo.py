@@ -161,8 +161,9 @@ class Suggestion:
             print("You cannot suggest in the same room in a row")
 
         players_objs = list(players.values())
+        # Reorder the reveal order to the next index and skip current player
         reveal_order_players = (
-            players_objs[player_turn + 1 :] + players_objs[: player_turn + 1]
+            players_objs[player_turn + 1 :] + players_objs[:player_turn]
         )
         for player in reveal_order_players:
             if (
@@ -255,6 +256,12 @@ def print_screen_buffer() -> None:
 def roll_die() -> int:
     """Roll a single 6 sided die and return int"""
     return random.randint(1, 6)
+
+
+def player_roll_die() -> int:
+    """Provide a prompt to roll a die"""
+    input("Press enter to roll your die!")
+    return roll_die()
 
 
 class Game:
@@ -389,7 +396,7 @@ class Game:
                 break
             print("Please enter y/Y for yes or n/N for no")
         if want_to_move:
-            die_res = roll_die()
+            die_res = player_roll_die()
             print(f"{player_id} rolled a {die_res}")
             possible_rooms = [
                 f"{location}-({dist} distance)"
