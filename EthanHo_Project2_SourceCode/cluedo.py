@@ -149,7 +149,9 @@ class Suggestion:
             and self.room == to_compare.room
         )
 
-    def declare_suggestion(self, players: dict[str, Player], current_player: Player):
+    def declare_suggestion(
+        self, players: dict[str, Player], current_player: Player, player_turn: int
+    ):
         """Function that allows a player to trigger the user flow for a suggestion"""
         suspect_player = players[self.suspect]
         suspect_player.change_room(self.room)
@@ -157,7 +159,12 @@ class Suggestion:
         self.weapon.set_location(new_room=self.room)
         if current_player.last_suggested_location == self.room:
             print("You cannot suggest in the same room in a row")
-        for _, player in players.items():
+
+        players_objs = list(players.values())
+        reveal_order_players = (
+            players_objs[player_turn + 1 :] + players_objs[: player_turn + 1]
+        )
+        for player in reveal_order_players:
             if (
                 len(player.hidden_cards) < 1
                 or player.player_number == current_player.player_number
@@ -177,7 +184,6 @@ class Suggestion:
                 player_id=player.get_player_identifier(), revealed_card=cards[0]
             )
             return
-
         print("No other players have any cards related to suggestion.")
 
     def player_check_cards(
@@ -204,6 +210,8 @@ class Suggestion:
         input(
             f"{player_id} has at least 1 card, provide control to the player and click enter."
         )
+        if self.print_buffer:
+            print_screen_buffer()
         print(
             f"{player_id}, the current player suggested {self}, choose one to reveal, after return to original player"
         )
@@ -395,7 +403,7 @@ class Game:
                     new_room=move_choice.split("-")[0], roll=die_res
                 ):
                     break
-
+            is_in_last_suggestion = False
             player_location = current_player.location
 
         # Enter room -> make suggestions for room
@@ -425,7 +433,9 @@ class Game:
             return self.check_accusation(accusation=player_suggestion)
         # If not accusation, then do a normal accusation check
         player_suggestion.declare_suggestion(
-            players=self.players, current_player=current_player
+            players=self.players,
+            current_player=current_player,
+            player_turn=self.player_turn,
         )
 
     def end_turn(self):
@@ -493,6 +503,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# TODO: update logic so that the suggestion occurs when the player enters a room - check if the last room they are in is in the same room they are suggesting.
