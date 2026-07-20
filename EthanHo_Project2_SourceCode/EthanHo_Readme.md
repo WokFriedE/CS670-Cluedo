@@ -29,7 +29,10 @@ The game will then prompt the user in the CLI several questions including:
 
 1. How many players?
    1. This will have to be between 3 and 6 players.
-2. Would you like to use the screen buffer?
+2. How many bots?
+   1. This will be between 0 to the number of players entered previously.
+   2. Since part 1 does not support bots, they will be replaced with players.
+3. Would you like to use the screen buffer?
    1. This will ensure each play will have some screen buffer so players cant see other players' information.
 
 The game will then set up the rest:

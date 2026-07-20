@@ -531,6 +531,17 @@ def main():
             continue
         if num_players >= MIN_PLAYERS and num_players <= MAX_PLAYERS:
             break
+    print("Note: as AI is not implemented yet, all bots will be replaced with players.")
+    while True:
+        try:
+            num_bots = int(
+                input(f"Provide the number of bots between 0 to {num_players}: ")
+            )
+        except ValueError:
+            print(f"Please input a valid integer from 0 to {num_players}")
+            continue
+        if num_players >= 0 and num_bots <= num_players:
+            break
     print_buffer = True
     print_buffer = (
         input(
@@ -538,7 +549,7 @@ def main():
         ).lower()
         != "no"
     )
-    # For part 1, number of bots will be forced to 0
+    # For part 1, number of bots will be forced to 0 and replaced with "players"
     game = Game(num_players=num_players, num_bots=0, print_buffer=print_buffer)
     game.play()
 
