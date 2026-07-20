@@ -47,6 +47,7 @@ STARTING_POSITIONS = {
     "Professor Plum": "Library",
 }
 
+# Setting up the min and max player limits
 MIN_PLAYERS = 3
 MAX_PLAYERS = 6
 
@@ -57,6 +58,8 @@ MAX_PLAYERS = 6
 
 
 class Weapon:
+    """Weapon token to track a weapon and its location"""
+
     def __init__(self, weapon: str):
         self.weapon_name: str = weapon
         self.location: str | None = None
@@ -76,6 +79,8 @@ class Weapon:
 
 
 class Player:
+    """Player token"""
+
     def __init__(
         self,
         player_number: int,
@@ -96,11 +101,13 @@ class Player:
         self.last_suggested_location: str = ""
 
     def get_player_identifier(self) -> str:
+        """Get player or ai identifier for display purposes"""
         if self.is_filler:
             return f"(Filler) Character {self.person}"
         return f"Player {self.player_number} ({self.person})"
 
     def change_room(self, new_room: str):
+        """Change the room of the player token"""
         self.location = new_room
 
     def action_move(self, new_room: str, roll: int) -> bool:
@@ -110,9 +117,11 @@ class Player:
         Return False for invalid move.
         """
         current_room = MANSION_GRAPH[self.location]
+        # Check if the room is accessible from current
         if new_room not in current_room:
             print("Room selected is not traversable from here\n")
             return False
+        # Check if the roll allows for traversal
         new_room_dist = current_room[new_room]
         if roll < new_room_dist:
             print("Not enough distance to travel\n")
@@ -167,15 +176,20 @@ class Suggestion:
             players_objs[player_turn + 1 :] + players_objs[:player_turn]
         )
         for player in reveal_order_players:
+            # Check if the player has at least one hidden card and not current player
             if (
                 len(player.hidden_cards) < 1
                 or player.player_number == current_player.player_number
             ):
                 continue
+            # Checks if cards are shared with suggestion
             cards = self.player_check_cards(revealing_player=player)
+            # If it has no matching cards, continue
             if cards is None:
                 continue
+            # Handle current player updates
             current_player.last_suggested_location = self.room
+            # Reveal the card to the current player
             if player.is_player:
                 self.player_reveal_card(
                     matching_cards=cards, player_id=player.get_player_identifier()
@@ -369,11 +383,12 @@ class Game:
         print(
             f"{player_ref.get_player_identifier()} has made an incorrect accusation and will now be skipped."
         )
+        # If the player is incorrect, mark as skip
         player_ref.skip = True
         return False
 
     def take_turn(self, current_player: Player) -> bool | None:
-        """Returns if the the user won or None"""
+        """Acts as a turn for a player. Returns if the the user won or None"""
         # run prompts
         player_id = current_player.get_player_identifier()
         if current_player.skip:
@@ -412,8 +427,10 @@ class Game:
                     options=possible_rooms,
                     prompt=f"Choose a room to travel to, ensure you can travel the distance. 0 are secret passages - Current roll {die_res}",
                 )
+                # If staying, move forward
                 if move_choice == "Stay":
                     break
+                # Ensure the player can move, if so update the player
                 if current_player.action_move(
                     new_room=move_choice.split("-")[0], roll=die_res
                 ):
@@ -425,6 +442,7 @@ class Game:
         possible_actions = ["make accusation"]
         if not is_in_last_suggestion or changed_locations:
             possible_actions.insert(0, "make suggestion")
+        # If the same location, allow to end turn - assuming the user cannot move out or if they want to make an accusation
         if not changed_locations:
             possible_actions.append("end turn")
         action_in_room = list_options(
@@ -446,10 +464,10 @@ class Game:
         )
         print(f"{player_id} suggest it was {player_suggestion}")
         current_player.last_suggested_location = room
-        # Make accusation!
+        # Make accusation
         if action_in_room == "make accusation":
             return self.check_accusation(accusation=player_suggestion)
-        # If not accusation, then do a normal accusation check
+        # If not accusation, then do a normal suggestion check
         player_suggestion.declare_suggestion(
             players=self.players,
             current_player=current_player,
@@ -458,9 +476,11 @@ class Game:
 
     def end_turn(self):
         """Change the turn / player"""
+        # Update turn according to the length of suspects
         next_player = self.player_turn + 1
         self.player_turn = 0 if next_player >= len(SUSPECTS) else next_player
         curr_player = self.get_player_from_index()
+        # If player is skipped, then continue to the next player
         if curr_player.skip:
             print(f"Skipping {curr_player.get_player_identifier()}")
             self.end_turn()
@@ -470,7 +490,9 @@ class Game:
         self.game_setup()
         print("Finished game set up\n\n\n")
         while True:
+            # Get player object, based on suspect order
             current_player = self.get_player_from_index()
+            # Play turn
             result = self.take_turn(current_player=current_player)
             if result == True:
                 break
@@ -489,12 +511,10 @@ class Game:
 # Set up
 # ===============
 
-# Function to see if use preset or generate random locations
-# Function to initialize the game state - make the culprit and distribute the other cards
-
 
 def main():
     num_players = 0
+    # Prompts for game set up
     while True:
         try:
             num_players = int(
