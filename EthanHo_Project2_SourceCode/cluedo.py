@@ -135,7 +135,7 @@ class Suggestion:
         self.weapon = weapon
         self.room = room
         self.player = player_suggesting
-        self.combined = [self.room, self.weapon, self.suspect]
+        self.combined_names = [self.room, self.weapon.weapon_name, self.suspect]
         self.print_buffer = print_buffer
 
     def __str__(self) -> str:
@@ -155,7 +155,8 @@ class Suggestion:
         """Function that allows a player to trigger the user flow for a suggestion"""
         suspect_player = players[self.suspect]
         suspect_player.change_room(self.room)
-        suspect_player.last_suggested_location = self.room
+        if suspect_player.last_suggested_location != self.room:
+            suspect_player.last_suggested_location = ""
         self.weapon.set_location(new_room=self.room)
         if current_player.last_suggested_location == self.room:
             print("You cannot suggest in the same room in a row")
@@ -196,7 +197,9 @@ class Suggestion:
         Return list of matching cards else None
         """
         # Cross reference the current suggestion with a player's cards
-        matching_cards = list(set(self.combined) & set(revealing_player.hidden_cards))
+        matching_cards = list(
+            set(self.combined_names) & set(revealing_player.hidden_cards)
+        )
         if len(matching_cards) == 0:
             print(f"{revealing_player.get_player_identifier()} passes.")
             return
@@ -283,6 +286,7 @@ class Game:
             weapon=final_weapon,
             print_buffer=self.print_buffer,
         )
+        print(self.final_accusation)
 
     def game_setup(self):
         initial_players: dict[str, Player | None] = dict.fromkeys(SUSPECTS)
@@ -294,7 +298,7 @@ class Game:
             for item in full_deck
             if item
             not in [
-                self.final_accusation.weapon,
+                self.final_accusation.weapon.weapon_name,
                 self.final_accusation.suspect,
                 self.final_accusation.room,
             ]
@@ -408,12 +412,14 @@ class Game:
                     options=possible_rooms,
                     prompt=f"Choose a room to travel to, ensure you can travel the distance. 0 are secret passages - Current roll {die_res}",
                 )
-                if move_choice == "Stay" or current_player.action_move(
+                if move_choice == "Stay":
+                    break
+                if current_player.action_move(
                     new_room=move_choice.split("-")[0], roll=die_res
                 ):
+                    player_location = current_player.location
+                    changed_locations = True
                     break
-            player_location = current_player.location
-            changed_locations = True
 
         # Enter room -> make suggestions for room
         possible_actions = ["make accusation"]
@@ -439,6 +445,7 @@ class Game:
             print_buffer=self.print_buffer,
         )
         print(f"{player_id} suggest it was {player_suggestion}")
+        current_player.last_suggested_location = room
         # Make accusation!
         if action_in_room == "make accusation":
             return self.check_accusation(accusation=player_suggestion)
