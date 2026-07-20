@@ -289,6 +289,7 @@ class Game:
         self.players: dict[str, Player] = {}
         self.print_buffer = print_buffer
         self.weapons: dict[str, Weapon] = {w: Weapon(w) for w in WEAPONS}
+        self.shared_cards_str: str = ""
 
         # Generate the final accusation on initialization
         final_suspect = random.choice(SUSPECTS)
@@ -300,7 +301,6 @@ class Game:
             weapon=final_weapon,
             print_buffer=self.print_buffer,
         )
-        print(self.final_accusation)
 
     def game_setup(self):
         initial_players: dict[str, Player | None] = dict.fromkeys(SUSPECTS)
@@ -360,6 +360,7 @@ class Game:
         if len(filtered_deck) > 0:
             temp_str = ", ".join(filtered_deck)
             print(f"Shared remaining deck: {temp_str}")
+            self.shared_cards_str = temp_str
 
     def get_player_from_index(self) -> Player:
         """Using the current turn counter, get the player object"""
@@ -399,6 +400,8 @@ class Game:
         print(f"{player_id}, you are in the {player_location}")
         hidden_card_str = ", ".join(current_player.hidden_cards)
         print(f"Hidden cards: {hidden_card_str}")
+        if self.shared_cards_str:
+            print(f"Shared cards: {self.shared_cards_str}")
         is_in_last_suggestion = (
             current_player.last_suggested_location == player_location
         )
