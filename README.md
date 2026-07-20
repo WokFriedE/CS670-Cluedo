@@ -2,16 +2,16 @@
 
 Ethan Ho | ekh3
 CS 670 - 850
-Project 2, part 1
-ekh3@njit.edu
+Project 2, Part 1
+<ekh3@njit.edu>
 
-### Setting up the game
+## Quick Start
 
 1. Clone the repository.
    1. ```git clone https://github.com/WokFriedE/CS670-Cluedo```
 2. In the root of the code, run the command ```python3 EthanHo_Project2_SourceCode/cluedo.py``` to run the game.
 
-### Game Setup
+## Game Setup
 
 When trying to start the game, run the following command:
 
@@ -33,14 +33,14 @@ The game will then set up the rest:
 - Turn the remaining suspects (which are not players) into placeholders.
 - If the remaining cards do not evenly split between players, it will display the remaining shared cards.
 
-### General Comments
+## General Comments
 
 - Have to keep track of your own evidence and shared cards, but your hidden cards.
 - Assumes hot swapping so there will be screen buffers to prevent players from seeing sensitive data, but you can disable the screen buffer during set up phases.
 - Currently for part 1 of the project, it does not allow bots.
 - Most of the application will prompt users to enter their choices by choosing a choice with numbers or yes and no prompts.
 
-### General Rules
+## General Rules
 
 - Have to be in a room to make a suggestion.
 - When you enter a room during your turn you must make a suggestion or accusation.
